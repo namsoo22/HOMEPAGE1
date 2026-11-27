@@ -13,7 +13,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="꽃순이 오피스">
 <meta name="mobile-web-app-capable" content="yes">
-<link rel="stylesheet" href="./style.css?v=20261127i">
+<link rel="stylesheet" href="./style.css?v=20261127j">
 </head>
 <body>
 
@@ -106,7 +106,7 @@
             <img src="./office-scene.png" alt="꽃순이 오피스 아이소메트릭 도면" width="1100" height="979" fetchpriority="high" decoding="async">
             <button class="pin" data-room="hq"      type="button" aria-label="지휘실" data-short="지휘실" style="--x:52%;--y:37%;--d:0s"><i class="dot"></i><span>지휘실</span></button>
             <button class="pin" data-room="meeting" type="button" aria-label="회의실" data-short="회의실" style="--x:19%;--y:44%;--d:.5s"><i class="dot"></i><span>회의실</span></button>
-            <button class="pin" data-room="mikyung" type="button" aria-label="미경 비서" data-short="미경" style="--x:56%;--y:53%;--d:.9s"><i class="dot"></i><span>미경 비서</span></button>
+            <button class="pin" data-room="mikyung" type="button" aria-label="2" data-short="2" style="--x:56%;--y:53%;--d:.9s"><i class="dot"></i><span>2</span></button>
             <button class="pin" data-room="todo"    type="button" aria-label="공동 할 일" data-short="할 일" style="--x:38%;--y:56%;--d:.3s"><i class="dot"></i><span>공동 할 일</span></button>
             <button class="pin" data-room="kids"    type="button" aria-label="아이들 보드" data-short="아이들" style="--x:61%;--y:62%;--d:.7s"><i class="dot"></i><span>아이들 보드</span></button>
             <button class="pin" data-room="lounge"  type="button" aria-label="라운지" data-short="라운지" style="--x:82%;--y:72%;--d:1.1s"><i class="dot"></i><span>라운지</span></button>
@@ -149,7 +149,7 @@
             <option value="요청">🙋 요청</option>
             <option value="메모" selected>📝 메모</option>
           </select>
-          <input id="boardAuthor" list="authorOptions" placeholder="작성자" value="정석 비서" aria-label="작성자">
+          <input id="boardAuthor" list="authorOptions" placeholder="작성자" value="1" aria-label="작성자">
           <label class="check"><input type="checkbox" id="boardPinned"> <span>상단 고정</span></label>
         </div>
         <textarea id="boardText" rows="2" placeholder="공지 · 요청 · 메모를 남겨 보세요 (예: 이번 주 금요일 오후 3시 병원 예약)" required></textarea>
@@ -173,7 +173,7 @@
       <form class="card form" id="todoForm">
         <input id="todoTitle" placeholder="할 일을 입력하세요" aria-label="할 일" required>
         <div class="form-row">
-          <input id="todoAssignee" list="authorOptions" placeholder="담당자" value="정석 비서" aria-label="담당자">
+          <input id="todoAssignee" list="authorOptions" placeholder="담당자" value="1" aria-label="담당자">
           <input id="todoDue" type="date" aria-label="기한">
           <select id="todoPriority" aria-label="우선순위">
             <option value="높음">🔴 높음</option>
@@ -243,7 +243,7 @@
     <section class="view" id="view-status">
       <form class="card form" id="statusForm">
         <div class="form-row">
-          <input id="statusName" list="authorOptions" placeholder="이름" value="정석 비서" aria-label="이름">
+          <input id="statusName" list="authorOptions" placeholder="이름" value="1" aria-label="이름">
           <input id="statusLine" placeholder="지금 상태 한 줄 (예: 오전 브리핑 준비 중)" aria-label="상태" required>
           <button class="btn primary" type="submit">업데이트</button>
         </div>
@@ -262,8 +262,10 @@
 </div>
 
 <datalist id="authorOptions">
-  <option value="정석 비서"></option>
-  <option value="미경 비서"></option>
+  <option value="1"></option>
+  <option value="2"></option>
+  <option value="정석"></option>
+  <option value="미경"></option>
   <option value="직접 작성"></option>
 </datalist>
 
@@ -307,7 +309,7 @@
     <section class="modal-section">
       <h3>내 이름</h3>
       <div class="row">
-        <input id="myName" type="text" placeholder="예: 정석 비서">
+        <input id="myName" type="text" placeholder="예: 1 (또는 2)">
         <button id="saveName" class="btn primary" type="button">저장</button>
       </div>
       <p class="hint">비서 현황판과 작성자 기본값에 쓰입니다.</p>
@@ -351,7 +353,7 @@
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script type="module" src="./app.js?v=20261127i"></script>
+<script type="module" src="./app.js?v=20261127j"></script>
 <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function () {

@@ -22,8 +22,17 @@ const CATEGORY_ICON = { '공지': '📢', '요청': '🙋', '메모': '📝' };
 const KID_ICON = { '준비물': '🎒', '일정': '📅', '전달': '📣' };
 
 // 채팅: 기본 작성자 후보와 직접 입력 항목
-const CHAT_AUTHORS = ['정석 비서', '미경 비서', '정석', '미경'];
+const CHAT_AUTHORS = ['1', '2', '정석', '미경'];
 const CHAT_CUSTOM = '직접 입력';
+
+// 비서 이름은 번호로 부른다 (2026-11-27 변경): 정석 비서 → 1, 미경 비서 → 2
+// 예전 이름이 localStorage·DB에 남아 있어도 화면에서는 번호로 읽고 쓴다.
+const LEGACY_NAMES = { '정석 비서': '1', '미경 비서': '2', '정석비서': '1', '미경비서': '2' };
+function canonName(v) {
+  const s = String(v ?? '').trim();
+  if (!s) return '';
+  return LEGACY_NAMES[s] || LEGACY_NAMES[s.replace(/\s+/g, '')] || s;
+}
 
 // ── 작은 도우미들 ─────────────────────────────────────────────
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -105,8 +114,8 @@ function toast(msg) {
 
 // ── 설정 값 ──────────────────────────────────────────────────
 const entryCode = () => localStorage.getItem(K.code) || DEFAULT_ENTRY_CODE;
-const myName = () => localStorage.getItem(K.me) || '정석 비서';
-const setMyName = (v) => localStorage.setItem(K.me, String(v).trim() || '정석 비서');
+const myName = () => canonName(localStorage.getItem(K.me)) || '1';
+const setMyName = (v) => localStorage.setItem(K.me, canonName(v) || '1');
 
 function savedFbConfig() {
   try {
@@ -146,7 +155,7 @@ function seedState() {
     },
     board: {
       b1: {
-        category: '공지', author: '정석 비서', pinned: true,
+        category: '공지', author: '1', pinned: true,
         text: '합동 비서실이 열렸습니다. 이 보드는 여러 비서와 가족이 함께 보는 공유 공간입니다.\n공지 · 요청 · 메모를 자유롭게 남겨 주세요.',
         createdAt: now - 3 * d, updatedAt: now - 3 * d
       },
@@ -156,15 +165,15 @@ function seedState() {
         createdAt: now - 2 * d, updatedAt: now - 2 * d
       },
       b3: {
-        category: '메모', author: '미경 비서', pinned: false,
+        category: '메모', author: '2', pinned: false,
         text: '장보기 목록: 우유 · 계란 · 과일 · 아이 간식',
         createdAt: now - d, updatedAt: now - d
       }
     },
     todos: {
-      t1: { title: '이번 주 병원 예약 시간 확인', assignee: '정석 비서', due: day(2), priority: '보통', done: false, createdAt: now - 2 * d },
-      t2: { title: '아이들 체육복·실내화 챙기기', assignee: '미경 비서', due: day(1), priority: '높음', done: false, createdAt: now - d },
-      t3: { title: '비서실 입장 코드 가족에게 공유', assignee: '정석 비서', due: '', priority: '낮음', done: true, createdAt: now - 3 * d }
+      t1: { title: '이번 주 병원 예약 시간 확인', assignee: '1', due: day(2), priority: '보통', done: false, createdAt: now - 2 * d },
+      t2: { title: '아이들 체육복·실내화 챙기기', assignee: '2', due: day(1), priority: '높음', done: false, createdAt: now - d },
+      t3: { title: '비서실 입장 코드 가족에게 공유', assignee: '1', due: '', priority: '낮음', done: true, createdAt: now - 3 * d }
     },
     kids: {
       k1: { child: 'c1', type: '준비물', text: '체육복 · 실내화', date: day(1), done: false, createdAt: now - d },
@@ -355,13 +364,13 @@ function renderBoard() {
   }
   const me = norm(myName());
   host.innerHTML = items.map((v) => {
-    const mine = norm(v.author) === me;
+    const mine = norm(canonName(v.author)) === me;
     const edited = v.updatedAt && v.createdAt && v.updatedAt - v.createdAt > 60000;
     return `<article class="item ${v.pinned ? 'pinned' : ''}" data-id="${esc(v.id)}">
       <div class="item-head">
         ${v.pinned ? '<span class="tag pin">📌 고정</span>' : ''}
         <span class="tag cat-${esc(v.category || '메모')}">${CATEGORY_ICON[v.category] || '📝'} ${esc(v.category || '메모')}</span>
-        <span class="tag author ${mine ? 'mine' : ''}">${esc(v.author || '익명')}</span>
+        <span class="tag author ${mine ? 'mine' : ''}">${esc(canonName(v.author) || '익명')}</span>
       </div>
       <p class="item-text">${esc(v.text)}</p>
       <div class="item-foot">
@@ -403,7 +412,7 @@ function renderTodos() {
           <div class="body">
             <p class="title ${v.done ? 'done' : ''}">${esc(v.title)}</p>
             <div class="meta">
-              <span class="tag author ${norm(v.assignee) === norm(myName()) ? 'mine' : ''}">${esc(v.assignee || '미지정')}</span>
+              <span class="tag author ${norm(canonName(v.assignee)) === norm(myName()) ? 'mine' : ''}">${esc(canonName(v.assignee) || '미지정')}</span>
               <span class="prio ${esc(v.priority || '보통')}">${esc(v.priority || '보통')}</span>
               ${due ? `<span class="due ${due.soon && !v.done ? 'soon' : ''}">${esc(due.text)}</span>` : ''}
               <span class="item-actions" style="margin-left:auto">
@@ -486,7 +495,7 @@ function renderChildEditor() {
 function chatAuthorNames() {
   const names = [];
   const push = (n) => {
-    const v = String(n || '').trim();
+    const v = canonName(n);
     if (v && v !== CHAT_CUSTOM && !names.some((x) => norm(x) === norm(v))) names.push(v);
   };
   push(myName());
@@ -497,8 +506,8 @@ function chatAuthorNames() {
 
 function currentChatAuthor() {
   const custom = $('#chatAuthorCustom');
-  if (custom && !custom.hidden && custom.value.trim()) return custom.value.trim();
-  return $('#chatAuthor')?.value || myName();
+  if (custom && !custom.hidden && custom.value.trim()) return canonName(custom.value);
+  return canonName($('#chatAuthor')?.value) || myName();
 }
 
 function renderChatAuthors() {
@@ -506,7 +515,7 @@ function renderChatAuthors() {
   if (!sel) return;
   const names = chatAuthorNames();
   const custom = $('#chatAuthorCustom');
-  const prev = sel.value || localStorage.getItem(K.chatAuthor) || myName();
+  const prev = canonName(sel.value || localStorage.getItem(K.chatAuthor) || myName());
   if (prev !== CHAT_CUSTOM && !names.includes(prev)) names.push(prev);   // 지난번에 쓴 이름은 끝에 보존
   const sig = `${names.join('|')}#${prev}`;
   if (sig !== chatState.authorSig) {
@@ -542,13 +551,13 @@ function renderChat() {
       lastDay = key;
       prevAuthor = '';
     }
-    const mine = norm(v.author) === me;
-    const sameRun = !!prevAuthor && norm(prevAuthor) === norm(v.author);
-    const initial = String(v.author || '?').trim().slice(0, 1) || '?';
+    const mine = norm(canonName(v.author)) === me;
+    const sameRun = !!prevAuthor && norm(canonName(prevAuthor)) === norm(canonName(v.author));
+    const initial = String(canonName(v.author) || '?').trim().slice(0, 1) || '?';
     rows.push(`<div class="msg ${mine ? 'mine' : ''}" data-id="${esc(v.id)}">
       ${mine ? '' : `<div class="msg-avatar ${avatarClass(v.author)}" aria-hidden="true">${esc(initial)}</div>`}
       <div class="msg-body">
-        ${mine || sameRun ? '' : `<span class="msg-author">${esc(v.author || '익명')}</span>`}
+        ${mine || sameRun ? '' : `<span class="msg-author">${esc(canonName(v.author) || '익명')}</span>`}
         <div class="bubble">${esc(v.text)}</div>
         <div class="msg-meta">
           <span>${esc(hhmm(ts))}</span>
@@ -583,7 +592,7 @@ function renderStatus() {
       <div class="avatar ${palette[i % 4]}">${esc(initial)}</div>
       <div style="flex:1;min-width:0">
         <div class="item-head" style="margin-bottom:4px">
-          <span class="tag author ${norm(v.name) === norm(myName()) ? 'mine' : ''}">${esc(v.name || '이름 없음')}</span>
+          <span class="tag author ${norm(canonName(v.name)) === norm(myName()) ? 'mine' : ''}">${esc(canonName(v.name) || '이름 없음')}</span>
           ${live ? '<span class="live-dot" style="font-size:11px">접속 중</span>' : `<span class="hint">${esc(timeAgo(v.lastSeen))} 접속</span>`}
         </div>
         <p class="status-line">${esc(v.line || '상태 메시지 없음')}</p>
@@ -619,7 +628,7 @@ function updateConnBadge() {
 /* ── 오피스 대시보드 ─────────────────────────────────────── */
 const ROOMS = {
   hq: {
-    label: '지휘실', emoji: '🖥️', sub: '꽃순이 데스크 · 접속 상태와 최근 공지',
+    label: '지휘실', emoji: '🖥️', sub: '1 · 접속 상태와 최근 공지',
     goto: 'status', gotoLabel: '현황 보기', alt: { view: 'board', label: '공유 보드' }
   },
   meeting: {
@@ -627,7 +636,7 @@ const ROOMS = {
     goto: 'board', gotoLabel: '공유 보드 보기'
   },
   mikyung: {
-    label: '미경 비서', emoji: '🐰', sub: '접속 상태 · 최근 작성 글',
+    label: '2', emoji: '🐰', sub: '접속 상태 · 최근 작성 글',
     goto: 'status', gotoLabel: '현황 보기', alt: { view: 'chat', label: '채팅' }
   },
   todo: {
@@ -675,7 +684,7 @@ function statusRows(limit) {
       return rpRow({
         dot: live,
         title: v.line || '상태 메시지 없음',
-        tag: v.name || '이름 없음',
+        tag: canonName(v.name) || '이름 없음',
         tagClass: live ? 'on' : '',
         meta: `업데이트 ${timeAgo(v.updatedAt || v.lastSeen)}`,
         side: live ? '접속 중' : timeAgo(v.lastSeen)
@@ -705,7 +714,7 @@ function todoRows(limit) {
         dot: !!due?.soon,
         title: v.title,
         tag: v.priority || '보통',
-        meta: [v.assignee || '미지정', due ? due.text : ''].filter(Boolean).join(' · ')
+        meta: [canonName(v.assignee) || '미지정', due ? due.text : ''].filter(Boolean).join(' · ')
       });
     });
 }
@@ -739,7 +748,7 @@ function chatRows(limit) {
     .reverse()
     .map((v) => rpRow({
       title: v.text,
-      tag: v.author || '익명',
+      tag: canonName(v.author) || '익명',
       meta: `${dayLabel(dayKey(v.createdAt))} ${hhmm(v.createdAt)}`
     }));
 }
@@ -747,7 +756,7 @@ function chatRows(limit) {
 const ROOM_EMPTY = {
   hq: '아직 접속 기록이나 공지가 없어요. 현황 탭에서 상태 한 줄을 남겨 보세요.',
   meeting: '아직 공유 보드 글이 없어요. 회의실에서 첫 공지를 올려 보세요.',
-  mikyung: '미경 비서의 최근 기록이 아직 없어요.',
+  mikyung: '2의 최근 기록이 아직 없어요.',
   todo: '미완료 할 일이 없어요. 지금은 모두 비어 있어요.',
   kids: '아이들 보드에 카드가 아직 없어요.',
   lounge: '아직 채팅이 없어요. 라운지에서 첫 인사를 건네 보세요.'
@@ -758,8 +767,9 @@ function buildRoomRows(id) {
     case 'hq': return statusRows(2).concat(boardRows(2, (v) => v.category === '공지'));
     case 'meeting': return boardRows(3);
     case 'mikyung': {
+      const inRoom = (name) => canonName(name) === '2' || canonName(name) === '미경';
       const st = entries('status')
-        .filter((v) => String(v.name || '').includes('미경'))
+        .filter((v) => inRoom(v.name))
         .sort((a, b) => (b.lastSeen || 0) - (a.lastSeen || 0))
         .slice(0, 1)
         .map((v) => {
@@ -767,12 +777,12 @@ function buildRoomRows(id) {
           return rpRow({
             dot: live,
             title: v.line || '상태 메시지 없음',
-            tag: v.name, tagClass: live ? 'on' : '',
+            tag: canonName(v.name), tagClass: live ? 'on' : '',
             meta: `업데이트 ${timeAgo(v.updatedAt || v.lastSeen)}`,
             side: live ? '접속 중' : timeAgo(v.lastSeen)
           });
         });
-      return st.concat(boardRows(2, (v) => String(v.author || '').includes('미경')));
+      return st.concat(boardRows(2, (v) => canonName(v.author) === '2' || canonName(v.author) === '미경'));
     }
     case 'todo': return todoRows(4);
     case 'kids': return kidRows();
@@ -960,7 +970,7 @@ $('#boardForm').addEventListener('submit', async (e) => {
   const now = Date.now();
   await addItem('board', {
     category: $('#boardCategory').value,
-    author: $('#boardAuthor').value.trim() || myName(),
+    author: canonName($('#boardAuthor').value) || myName(),
     pinned: $('#boardPinned').checked,
     text,
     createdAt: now,
@@ -1003,7 +1013,7 @@ function openEdit(id) {
   if (!item) return;
   editingId = id;
   $('#editCategory').value = item.category || '메모';
-  $('#editAuthor').value = item.author || myName();
+  $('#editAuthor').value = canonName(item.author) || myName();
   $('#editPinned').checked = !!item.pinned;
   $('#editText').value = item.text || '';
   openModal('#editModal');
@@ -1016,7 +1026,7 @@ $('#editSave').addEventListener('click', async () => {
   if (!text) { toast('내용을 입력하세요'); return; }
   await updateItem('board', editingId, {
     category: $('#editCategory').value,
-    author: $('#editAuthor').value.trim() || myName(),
+    author: canonName($('#editAuthor').value) || myName(),
     pinned: $('#editPinned').checked,
     text,
     updatedAt: Date.now()
@@ -1033,7 +1043,7 @@ $('#todoForm').addEventListener('submit', async (e) => {
   if (!title) return;
   await addItem('todos', {
     title,
-    assignee: $('#todoAssignee').value.trim() || myName(),
+    assignee: canonName($('#todoAssignee').value) || myName(),
     due: $('#todoDue').value || '',
     priority: $('#todoPriority').value,
     done: false,
@@ -1152,7 +1162,7 @@ async function sendChat() {
   const sel = $('#chatAuthor');
   const author = currentChatAuthor();
   if (!author) { toast('작성자를 선택하거나 이름을 입력하세요'); return; }
-  if (sel && sel.value !== CHAT_CUSTOM) localStorage.setItem(K.chatAuthor, sel.value);
+  if (sel && sel.value !== CHAT_CUSTOM) localStorage.setItem(K.chatAuthor, canonName(sel.value));
   await addItem('chat', { author, text, createdAt: Date.now() });
   input.value = '';
   growChatInput();
@@ -1182,7 +1192,7 @@ $('#chatAuthor').addEventListener('change', () => {
     custom.value = '';
     custom.focus();
   } else {
-    localStorage.setItem(K.chatAuthor, sel.value);
+    localStorage.setItem(K.chatAuthor, canonName(sel.value));
   }
   renderChat();
 });
@@ -1196,7 +1206,7 @@ $('#chatList').addEventListener('click', async (e) => {
   if (!id) return;
   const item = (store.data.chat || {})[id];
   if (!item) return;
-  if (norm(item.author) !== norm(currentChatAuthor())) {
+  if (norm(canonName(item.author)) !== norm(currentChatAuthor())) {
     toast('내가 보낸 메시지만 지울 수 있어요');
     return;
   }
@@ -1208,7 +1218,7 @@ $('#chatList').addEventListener('click', async (e) => {
 /* ── 이벤트: 비서 현황 ── */
 $('#statusForm').addEventListener('submit', async (e) => {
   e.preventDefault();
-  const name = $('#statusName').value.trim() || myName();
+  const name = canonName($('#statusName').value) || myName();
   const line = $('#statusLine').value.trim();
   if (!line) return;
   if (!store.backend) { toast('잠시 후 다시 시도해 주세요'); return; }
