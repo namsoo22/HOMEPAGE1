@@ -3,25 +3,26 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#4f46e5">
-<meta name="description" content="합동 비서실 - 가족과 비서가 함께 쓰는 실시간 공유 보드">
-<title>합동 비서실 · Shared Assistant Office</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='24' fill='%234f46e5'/%3E%3Ctext x='50' y='68' font-size='54' text-anchor='middle' fill='white'%3E%F0%9F%8F%A2%3C/text%3E%3C/svg%3E">
-<link rel="manifest" href="./manifest.webmanifest">
-<link rel="apple-touch-icon" href="./icon.svg">
+<meta name="theme-color" content="#131B2E">
+<meta name="description" content="꽃순이 오피스 - 합동 비서실. 가족과 비서가 함께 쓰는 실시간 오피스 대시보드">
+<title>꽃순이 오피스 · 합동 비서실</title>
+<link rel="icon" href="./icon.svg">
+<link rel="manifest" href="./manifest.json">
+<link rel="apple-touch-icon" href="./apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="합동 비서실">
-<link rel="stylesheet" href="./style.css?v=20261127d">
+<meta name="apple-mobile-web-app-title" content="꽃순이 오피스">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="stylesheet" href="./style.css?v=20261127e">
 </head>
 <body>
 
 <!-- ── 잠금 화면 ───────────────────────────────────────────── -->
 <div class="lock" id="lockScreen">
   <div class="lock-card">
-    <div class="lock-mark">🏢</div>
-    <h1>합동 비서실</h1>
-    <p class="lock-sub">Shared Assistant Office</p>
+    <img class="lock-mark" src="./icon-512.png" alt="꽃순이 오피스">
+    <h1>꽃순이 오피스</h1>
+    <p class="lock-sub">합동 비서실 · Shared Office</p>
     <form id="lockForm" class="lock-form" autocomplete="off">
       <input id="lockCode" type="password" placeholder="입장 코드" aria-label="입장 코드" required autocapitalize="off" spellcheck="false">
       <button type="submit" class="btn primary">입장</button>
@@ -36,35 +37,108 @@
 
 <!-- ── 본문 ───────────────────────────────────────────────── -->
 <div class="app" id="app" hidden>
-  <header class="topbar">
-    <div class="brand">
-      <span class="brand-mark">🏢</span>
-      <div class="brand-text">
-        <h1>합동 비서실</h1>
-        <p>Shared Assistant Office</p>
+  <div class="topbar-wrap">
+    <header class="topbar">
+      <div class="brand">
+        <img class="brand-mark" src="./icon-512.png" alt="" aria-hidden="true">
+        <div class="brand-text">
+          <h1>꽃순이 오피스</h1>
+          <p>합동 비서실 · 4개 파트 가동 중</p>
+        </div>
       </div>
-    </div>
-    <div class="topbar-actions">
-      <button id="connBadge" class="badge" type="button" title="실시간 DB 연결 설정">
-        <span class="dot"></span><span id="connText">실시간 DB 미연결 · 로컬 모드</span>
-      </button>
-      <button id="settingsBtn" class="icon-btn" type="button" title="설정" aria-label="설정">⚙️</button>
-      <button id="lockBtn" class="icon-btn" type="button" title="잠그기" aria-label="잠그기">🔒</button>
-    </div>
-  </header>
+      <div class="topbar-actions">
+        <button id="connBadge" class="live-badge" type="button" title="실시간 DB 연결 설정">
+          <span class="dot"></span><span id="connText">LIVE</span>
+        </button>
+        <button id="settingsBtn" class="icon-btn" type="button" title="설정" aria-label="설정">⚙️</button>
+        <button id="lockBtn" class="icon-btn" type="button" title="잠그기" aria-label="잠그기">🔒</button>
+      </div>
+    </header>
 
-  <nav class="tabs" id="tabs">
-    <button class="tab active" data-view="board" type="button"><span>📌</span> 공유 보드</button>
-    <button class="tab" data-view="todos" type="button"><span>✅</span> 공동 할 일</button>
-    <button class="tab" data-view="kids" type="button"><span>🧒</span> 아이들 보드</button>
-    <button class="tab" data-view="chat" type="button"><span>💬</span> 채팅</button>
-    <button class="tab" data-view="status" type="button"><span>👥</span> 비서 현황</button>
-  </nav>
+    <nav class="segmented" id="tabs" aria-label="화면 전환">
+      <div class="segmented-track">
+        <button class="seg active" data-view="office" type="button">오피스</button>
+        <button class="seg" data-view="board" type="button">공유 보드</button>
+        <button class="seg" data-view="todos" type="button">할 일</button>
+        <button class="seg" data-view="kids" type="button">아이들</button>
+        <button class="seg" data-view="chat" type="button">채팅</button>
+        <button class="seg" data-view="status" type="button">현황</button>
+      </div>
+    </nav>
+  </div>
 
   <main class="main">
 
-    <!-- 공유 보드 -->
-    <section class="view active" id="view-board">
+    <!-- ── 오피스 ─────────────────────────────────────────── -->
+    <section class="view active" id="view-office">
+
+      <div class="card hero">
+        <span class="pill">Workspace</span>
+        <h2>정석 님, 합동 비서실이 가동 중이에요</h2>
+        <p class="hero-sub">공간이나 담당자를 탭하면 최근 진행 현황을 바로 볼 수 있어요.</p>
+        <div class="hero-chips">
+          <button class="chip-btn motion is-on" id="motionToggle" type="button" aria-pressed="true">
+            <span class="motion-dot"></span><span id="motionLabel">모션 ON</span>
+          </button>
+          <button class="chip-btn stat" id="statChip" type="button">
+            <span class="stat-top">가동 <b>4파트</b></span>
+            <span class="stat-sub" id="statSub">미완료 0 · 접속 0</span>
+          </button>
+          <span class="chip-btn stat">
+            <span class="stat-top"><b>Lv.3</b> 꽃순이</span>
+            <span class="stat-sub">비서실 지휘</span>
+          </span>
+        </div>
+      </div>
+
+      <div class="card office-card">
+        <div class="office-head">
+          <div>
+            <h3>오피스</h3>
+            <p class="office-sub">핀을 탭하면 그 자리의 최근 진행 현황이 열려요</p>
+          </div>
+          <span class="office-live"><i class="dot"></i><span id="officeMode">실시간</span></span>
+        </div>
+
+        <div class="office-stage" id="officeStage">
+          <img src="./office-scene.png" alt="꽃순이 오피스 아이소메트릭 도면" width="1100" height="979" fetchpriority="high" decoding="async">
+          <button class="pin" data-room="hq"      type="button" style="--x:52%;--y:37%;--d:0s"><i class="dot"></i><span>지휘실</span></button>
+          <button class="pin" data-room="meeting" type="button" style="--x:19%;--y:44%;--d:.5s"><i class="dot"></i><span>회의실</span></button>
+          <button class="pin" data-room="mikyung" type="button" style="--x:56%;--y:53%;--d:.9s"><i class="dot"></i><span>미경 비서</span></button>
+          <button class="pin" data-room="todo"    type="button" style="--x:38%;--y:56%;--d:.3s"><i class="dot"></i><span>공동 할 일</span></button>
+          <button class="pin" data-room="kids"    type="button" style="--x:61%;--y:62%;--d:.7s"><i class="dot"></i><span>아이들 보드</span></button>
+          <button class="pin" data-room="lounge"  type="button" style="--x:82%;--y:72%;--d:1.1s"><i class="dot"></i><span>라운지</span></button>
+        </div>
+      </div>
+
+      <section class="card room-panel" id="roomPanel" hidden aria-live="polite"></section>
+
+      <div class="quick-grid">
+        <button class="card quick" data-goto="board" type="button">
+          <span class="q-ico">📌</span>
+          <b>공유 보드</b>
+          <span class="q-sub" id="qBoard">최근 글 확인</span>
+        </button>
+        <button class="card quick" data-goto="todos" type="button">
+          <span class="q-ico">✅</span>
+          <b>공동 할 일</b>
+          <span class="q-sub" id="qTodo">미완료 확인</span>
+        </button>
+        <button class="card quick" data-goto="kids" type="button">
+          <span class="q-ico">🧒</span>
+          <b>아이들 보드</b>
+          <span class="q-sub" id="qKids">준비물·일정</span>
+        </button>
+        <button class="card quick" data-goto="chat" type="button">
+          <span class="q-ico">💬</span>
+          <b>채팅</b>
+          <span class="q-sub" id="qChat">새 메시지 확인</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- ── 공유 보드 ───────────────────────────────────────── -->
+    <section class="view" id="view-board">
       <form class="card form" id="boardForm">
         <div class="form-row">
           <select id="boardCategory" aria-label="분류">
@@ -91,7 +165,7 @@
       <div class="list" id="boardList"></div>
     </section>
 
-    <!-- 공동 할 일 -->
+    <!-- ── 공동 할 일 ──────────────────────────────────────── -->
     <section class="view" id="view-todos">
       <form class="card form" id="todoForm">
         <input id="todoTitle" placeholder="할 일을 입력하세요" aria-label="할 일" required>
@@ -116,7 +190,7 @@
       <div class="list" id="todoList"></div>
     </section>
 
-    <!-- 아이들 보드 -->
+    <!-- ── 아이들 보드 ─────────────────────────────────────── -->
     <section class="view" id="view-kids">
       <form class="card form" id="kidForm">
         <div class="form-row">
@@ -143,7 +217,7 @@
       </details>
     </section>
 
-    <!-- 채팅 -->
+    <!-- ── 채팅 ────────────────────────────────────────────── -->
     <section class="view" id="view-chat">
       <div class="chat-card card">
         <div class="chat-head">
@@ -162,7 +236,7 @@
       <p class="hint center">Enter 전송 · Shift+Enter 줄바꿈 · 내 말풍선은 🗑️로 지울 수 있어요.</p>
     </section>
 
-    <!-- 비서 현황 -->
+    <!-- ── 현황 ────────────────────────────────────────────── -->
     <section class="view" id="view-status">
       <form class="card form" id="statusForm">
         <div class="form-row">
@@ -179,7 +253,7 @@
   </main>
 
   <footer class="footer">
-    <span>합동 비서실 · 가족과 비서가 함께 쓰는 공유 보드</span>
+    <span>꽃순이 오피스 · 가족과 비서가 함께 쓰는 공유 오피스</span>
     <span id="modeFooter"></span>
   </footer>
 </div>
@@ -274,6 +348,15 @@
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script type="module" src="./app.js?v=20261127c"></script>
+<script type="module" src="./app.js?v=20261127e"></script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('./sw.js').catch(function (e) {
+        console.warn('[shared-office] 서비스 워커 등록 실패:', e);
+      });
+    });
+  }
+</script>
 </body>
 </html>

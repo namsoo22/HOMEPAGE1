@@ -14,7 +14,8 @@ const K = {
   fb: 'so.firebase-config',
   me: 'so.me',
   unlocked: 'so.unlocked',
-  chatAuthor: 'so.chat-author'
+  chatAuthor: 'so.chat-author',
+  motion: 'so.motion'
 };
 
 const CATEGORY_ICON = { '공지': '📢', '요청': '🙋', '메모': '📝' };
@@ -122,7 +123,7 @@ const fbConfig = () => savedFbConfig() || codeFbConfig();
 
 // ── 앱 상태 ──────────────────────────────────────────────────
 const store = { mode: 'local', data: {}, backend: null, ready: false };
-const ui = { view: 'board', boardCat: '전체', todoFilter: 'all', kidTab: 'all' };
+const ui = { view: 'office', boardCat: '전체', todoFilter: 'all', kidTab: 'all', room: null };
 const chatState = { lastKey: null, authorSig: '' };
 
 const myKey = (name = myName()) =>
@@ -325,6 +326,7 @@ const entries = (path) => Object.entries(store.data[path] || {}).map(([id, v]) =
 // ── 렌더링 ──────────────────────────────────────────────────
 function renderAll() {
   if (!store.ready) return;
+  renderOffice();
   renderBoard();
   renderTodos();
   renderKids();
@@ -598,16 +600,284 @@ function updateConnBadge() {
   if (!badge || !text) return;
   if (store.mode === 'firebase') {
     badge.classList.add('online');
-    text.textContent = '실시간 DB 연결됨';
+    text.textContent = 'LIVE';
+    badge.title = '실시간 DB 연결됨 · 설정 열기';
     $('#modeFooter').textContent = 'Firebase Realtime Database · 실시간 동기화';
+    const om = $('#officeMode');
+    if (om) om.textContent = '실시간';
   } else {
     badge.classList.remove('online');
-    text.textContent = '실시간 DB 미연결 · 로컬 모드';
+    text.textContent = '로컬';
+    badge.title = '로컬 모드 · 실시간 DB 연결 설정';
     $('#modeFooter').textContent = '로컬 모드 · 이 기기에만 저장';
+    const om = $('#officeMode');
+    if (om) om.textContent = '로컬';
   }
 }
 
 // ── 잠금 ────────────────────────────────────────────────────
+/* ── 오피스 대시보드 ─────────────────────────────────────── */
+const ROOMS = {
+  hq: {
+    label: '지휘실', emoji: '🖥️', sub: '꽃순이 데스크 · 접속 상태와 최근 공지',
+    goto: 'status', gotoLabel: '현황 보기', alt: { view: 'board', label: '공유 보드' }
+  },
+  meeting: {
+    label: '회의실', emoji: '🗓️', sub: '최근 공유 보드 글',
+    goto: 'board', gotoLabel: '공유 보드 보기'
+  },
+  mikyung: {
+    label: '미경 비서', emoji: '🐰', sub: '접속 상태 · 최근 작성 글',
+    goto: 'status', gotoLabel: '현황 보기', alt: { view: 'chat', label: '채팅' }
+  },
+  todo: {
+    label: '공동 할 일', emoji: '🐕', sub: '미완료 할 일',
+    goto: 'todos', gotoLabel: '할 일 보기'
+  },
+  kids: {
+    label: '아이들 보드', emoji: '🐈', sub: '첫째 · 둘째 · 셋째 최근 항목',
+    goto: 'kids', gotoLabel: '아이들 보기'
+  },
+  lounge: {
+    label: '라운지', emoji: '🛋️', sub: '최근 채팅 메시지',
+    goto: 'chat', gotoLabel: '채팅 보기'
+  }
+};
+
+const PRIORITY_ORDER = { '높음': 0, '보통': 1, '낮음': 2 };
+const isLiveStatus = (v) => Date.now() - Number(v.lastSeen || v.updatedAt || 0) < 3 * 60e3;
+
+function shortText(s, n = 80) {
+  const t = String(s ?? '').replace(/\s+/g, ' ').trim();
+  return t.length > n ? `${t.slice(0, n - 1)}…` : t;
+}
+
+const boardSorted = () => entries('board')
+  .sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || (b.createdAt || 0) - (a.createdAt || 0));
+
+function rpRow({ dot = false, title, tag = '', tagClass = '', meta = '', side = '' }) {
+  return `<div class="rp-row">
+    <i class="r-dot${dot ? ' on' : ''}"></i>
+    <div class="r-main">
+      <span class="r-title">${esc(title)}</span>
+      <div class="r-meta">${tag ? `<span class="rp-tag ${tagClass}">${esc(tag)}</span>` : ''}${meta ? `<span>${esc(meta)}</span>` : ''}</div>
+    </div>
+    ${side ? `<span class="r-side">${esc(side)}</span>` : ''}
+  </div>`;
+}
+
+function statusRows(limit) {
+  return entries('status')
+    .sort((a, b) => (b.lastSeen || b.updatedAt || 0) - (a.lastSeen || a.updatedAt || 0))
+    .slice(0, limit)
+    .map((v) => {
+      const live = isLiveStatus(v);
+      return rpRow({
+        dot: live,
+        title: v.line || '상태 메시지 없음',
+        tag: v.name || '이름 없음',
+        tagClass: live ? 'on' : '',
+        meta: `업데이트 ${timeAgo(v.updatedAt || v.lastSeen)}`,
+        side: live ? '접속 중' : timeAgo(v.lastSeen)
+      });
+    });
+}
+
+function boardRows(limit, filter) {
+  let list = boardSorted();
+  if (filter) list = list.filter(filter);
+  return list.slice(0, limit).map((v) => rpRow({
+    title: shortText(v.text),
+    tag: `${CATEGORY_ICON[v.category] || '📝'} ${v.category || '메모'}`,
+    meta: `${v.author || '익명'} · ${timeAgo(v.createdAt)}`
+  }));
+}
+
+function todoRows(limit) {
+  return entries('todos')
+    .filter((v) => !v.done)
+    .sort((a, b) => (PRIORITY_ORDER[a.priority] ?? 1) - (PRIORITY_ORDER[b.priority] ?? 1)
+      || (a.due || '9999').localeCompare(b.due || '9999'))
+    .slice(0, limit)
+    .map((v) => {
+      const due = dateLabel(v.due);
+      return rpRow({
+        dot: !!due?.soon,
+        title: v.title,
+        tag: v.priority || '보통',
+        meta: [v.assignee || '미지정', due ? due.text : ''].filter(Boolean).join(' · ')
+      });
+    });
+}
+
+function kidRows() {
+  const kids = entries('children').sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+  const cards = entries('kids');
+  const rows = [];
+  kids.forEach((c) => {
+    const mine = cards.filter((k) => k.child === c.id);
+    if (!mine.length) return;
+    const open = mine.filter((k) => !k.done)
+      .sort((a, b) => (a.date || '9999').localeCompare(b.date || '9999') || (b.createdAt || 0) - (a.createdAt || 0));
+    const item = open[0] || mine.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))[0];
+    const due = dateLabel(item.date);
+    rows.push(rpRow({
+      dot: !item.done && !!due?.soon,
+      title: item.text,
+      tag: `${c.emoji || '🧒'} ${c.name}`,
+      tagClass: 'on',
+      meta: [`${KID_ICON[item.type] || '🎒'} ${item.type || '준비물'}`, due ? due.text : '', item.done ? '완료' : ''].filter(Boolean).join(' · ')
+    }));
+  });
+  return rows;
+}
+
+function chatRows(limit) {
+  return entries('chat')
+    .sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0))
+    .slice(-limit)
+    .reverse()
+    .map((v) => rpRow({
+      title: v.text,
+      tag: v.author || '익명',
+      meta: `${dayLabel(dayKey(v.createdAt))} ${hhmm(v.createdAt)}`
+    }));
+}
+
+const ROOM_EMPTY = {
+  hq: '아직 접속 기록이나 공지가 없어요. 현황 탭에서 상태 한 줄을 남겨 보세요.',
+  meeting: '아직 공유 보드 글이 없어요. 회의실에서 첫 공지를 올려 보세요.',
+  mikyung: '미경 비서의 최근 기록이 아직 없어요.',
+  todo: '미완료 할 일이 없어요. 지금은 모두 비어 있어요.',
+  kids: '아이들 보드에 카드가 아직 없어요.',
+  lounge: '아직 채팅이 없어요. 라운지에서 첫 인사를 건네 보세요.'
+};
+
+function buildRoomRows(id) {
+  switch (id) {
+    case 'hq': return statusRows(2).concat(boardRows(2, (v) => v.category === '공지'));
+    case 'meeting': return boardRows(3);
+    case 'mikyung': {
+      const st = entries('status')
+        .filter((v) => String(v.name || '').includes('미경'))
+        .sort((a, b) => (b.lastSeen || 0) - (a.lastSeen || 0))
+        .slice(0, 1)
+        .map((v) => {
+          const live = isLiveStatus(v);
+          return rpRow({
+            dot: live,
+            title: v.line || '상태 메시지 없음',
+            tag: v.name, tagClass: live ? 'on' : '',
+            meta: `업데이트 ${timeAgo(v.updatedAt || v.lastSeen)}`,
+            side: live ? '접속 중' : timeAgo(v.lastSeen)
+          });
+        });
+      return st.concat(boardRows(2, (v) => String(v.author || '').includes('미경')));
+    }
+    case 'todo': return todoRows(4);
+    case 'kids': return kidRows();
+    case 'lounge': return chatRows(4);
+    default: return [];
+  }
+}
+
+function renderRoomPanel(id) {
+  const host = $('#roomPanel');
+  const room = ROOMS[id];
+  if (!host || !room) return;
+  const rows = buildRoomRows(id);
+  const body = rows.length
+    ? rows.join('')
+    : `<div class="rp-empty">${esc(ROOM_EMPTY[id] || '표시할 내용이 없어요.')}</div>`;
+  const alt = room.alt
+    ? `<button class="rp-goto alt" type="button" data-goto="${room.alt.view}">${esc(room.alt.label)} →</button>`
+    : '';
+  host.innerHTML = `<div class="rp-head">
+      <span class="rp-ico">${room.emoji}</span>
+      <div class="rp-titles"><h4>${esc(room.label)}</h4><p>${esc(room.sub)}</p></div>
+      <button class="rp-close" type="button" data-rp-close aria-label="닫기">✕</button>
+    </div>
+    <div class="rp-body">${body}</div>
+    <div class="rp-foot">
+      <button class="rp-goto" type="button" data-goto="${room.goto}">${esc(room.gotoLabel)} →</button>
+      ${alt}
+      <span class="rp-time">${store.mode === 'firebase' ? '실시간 동기화' : '로컬 저장'}</span>
+    </div>`;
+  host.hidden = false;
+}
+
+function openRoom(id) {
+  ui.room = id;
+  $$('.pin').forEach((p) => p.classList.toggle('is-active', p.dataset.room === id));
+  renderRoomPanel(id);
+  if (window.matchMedia('(max-width: 860px)').matches) {
+    setTimeout(() => {
+      const host = $('#roomPanel');
+      if (host && !host.hidden) host.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 80);
+  }
+}
+
+function closeRoom() {
+  ui.room = null;
+  const host = $('#roomPanel');
+  if (host) host.hidden = true;
+  $$('.pin').forEach((p) => p.classList.remove('is-active'));
+}
+
+function renderOffice() {
+  if (!store.ready) return;
+  const openTodos = entries('todos').filter((v) => !v.done);
+  const live = entries('status').filter(isLiveStatus).length;
+  const chats = entries('chat').sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+  const sub = $('#statSub');
+  if (sub) sub.textContent = `미완료 ${openTodos.length} · 접속 ${live}`;
+  const q = {
+    qBoard: `글 ${entries('board').length}건`,
+    qTodo: `미완료 ${openTodos.length}건`,
+    qKids: `카드 ${entries('kids').length}건`,
+    qChat: chats.length ? `최근 ${timeAgo(chats[0].createdAt)}` : '메시지 없음'
+  };
+  Object.entries(q).forEach(([id, text]) => { const el = $(`#${id}`); if (el) el.textContent = text; });
+
+  if (ui.room) renderRoomPanel(ui.room);
+}
+
+function motionOn() { return localStorage.getItem(K.motion) !== 'off'; }
+
+function applyMotion(on) {
+  const stage = $('#officeStage');
+  const btn = $('#motionToggle');
+  const label = $('#motionLabel');
+  if (stage) stage.classList.toggle('motion-off', !on);
+  if (btn) {
+    btn.classList.toggle('is-on', on);
+    btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+  }
+  if (label) label.textContent = on ? '모션 ON' : '모션 OFF';
+}
+
+function toggleMotion() {
+  const next = !motionOn();
+  localStorage.setItem(K.motion, next ? 'on' : 'off');
+  applyMotion(next);
+  toast(next ? '오피스 모션을 켰습니다' : '오피스 모션을 껐습니다');
+}
+
+function switchView(view) {
+  ui.view = view;
+  $$('.seg').forEach((t) => t.classList.toggle('active', t.dataset.view === view));
+  $$('.view').forEach((v) => v.classList.toggle('active', v.id === `view-${view}`));
+  if (view === 'chat') {
+    requestAnimationFrame(() => {
+      const list = $('#chatList');
+      if (list) list.scrollTop = list.scrollHeight;
+    });
+  }
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
 function showApp() {
   $('#lockScreen').hidden = true;
   $('#app').hidden = false;
@@ -622,6 +892,8 @@ function lockApp() {
 }
 
 async function boot() {
+  applyMotion(motionOn());
+
   // 이름 기본값 반영
   $$('#boardAuthor, #todoAssignee, #statusName').forEach((el) => { el.value = myName(); });
 
@@ -653,19 +925,32 @@ $('#lockBtn').addEventListener('click', lockApp);
 
 // ── 이벤트: 탭 ──────────────────────────────────────────────
 $('#tabs').addEventListener('click', (e) => {
-  const btn = e.target.closest('.tab');
-  if (!btn) return;
-  ui.view = btn.dataset.view;
-  $$('.tab').forEach((t) => t.classList.toggle('active', t === btn));
-  $$('.view').forEach((v) => v.classList.toggle('active', v.id === `view-${ui.view}`));
-  if (ui.view === 'chat') {
-    requestAnimationFrame(() => {
-      const list = $('#chatList');
-      if (list) list.scrollTop = list.scrollHeight;
-    });
-  }
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  const btn = e.target.closest('.seg');
+  if (!btn || !btn.dataset.view) return;
+  switchView(btn.dataset.view);
 });
+
+// ── 이벤트: 오피스 ────────────────────────────────
+$('#officeStage').addEventListener('click', (e) => {
+  const pin = e.target.closest('.pin');
+  if (!pin || !pin.dataset.room) return;
+  if (ui.room === pin.dataset.room) closeRoom();
+  else openRoom(pin.dataset.room);
+});
+
+$('#roomPanel').addEventListener('click', (e) => {
+  if (e.target.closest('[data-rp-close]')) { closeRoom(); return; }
+  const go = e.target.closest('[data-goto]');
+  if (go) switchView(go.dataset.goto);
+});
+
+document.addEventListener('click', (e) => {
+  const quick = e.target.closest('.quick[data-goto]');
+  if (quick) switchView(quick.dataset.goto);
+});
+
+$('#motionToggle').addEventListener('click', toggleMotion);
+$('#statChip').addEventListener('click', () => switchView('status'));
 
 // ── 이벤트: 공유 보드 ───────────────────────────────────────
 $('#boardForm').addEventListener('submit', async (e) => {
