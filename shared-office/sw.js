@@ -1,7 +1,7 @@
 /* 꽃순이 오피스 · 서비스 워커
    정적 리소스: 네트워크 우선 + 폴백 캐시
    Firebase / 외부 API: 그대로 통과 (캐시하지 않음) */
-const CACHE = 'ggc-office-v7';
+const CACHE = 'ggc-office-v8';
 const SHELL = [
   './',
   './index.html',
