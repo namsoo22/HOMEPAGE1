@@ -13,11 +13,16 @@ const K = {
   state: 'so.state',
   fb: 'so.firebase-config',
   me: 'so.me',
-  unlocked: 'so.unlocked'
+  unlocked: 'so.unlocked',
+  chatAuthor: 'so.chat-author'
 };
 
 const CATEGORY_ICON = { '공지': '📢', '요청': '🙋', '메모': '📝' };
 const KID_ICON = { '준비물': '🎒', '일정': '📅', '전달': '📣' };
+
+// 채팅: 기본 작성자 후보와 직접 입력 항목
+const CHAT_AUTHORS = ['정석 비서', '미경 비서', '정석', '미경'];
+const CHAT_CUSTOM = '직접 입력';
 
 // ── 작은 도우미들 ─────────────────────────────────────────────
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -58,6 +63,36 @@ function dateLabel(dateStr) {
   return { text: `${d.getMonth() + 1}/${d.getDate()}`, soon: false };
 }
 
+// ── 채팅 도우미 ─────────────────────────────────────────────
+function hhmm(ts) {
+  const d = new Date(Number(ts) || Date.now());
+  return `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+}
+
+function dayKey(ts) {
+  const d = new Date(Number(ts) || Date.now());
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+}
+
+function dayLabel(key) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const d = new Date(`${key}T00:00:00`);
+  if (Number.isNaN(d.getTime())) return key;
+  const diff = Math.round((d - today) / 86400e3);
+  if (diff === 0) return '오늘';
+  if (diff === -1) return '어제';
+  if (diff === 1) return '내일';
+  return `${d.getFullYear()}.${pad2(d.getMonth() + 1)}.${pad2(d.getDate())}`;
+}
+
+function avatarClass(name) {
+  const s = String(name || '');
+  let h = 0;
+  for (const ch of s) h = (h * 31 + ch.codePointAt(0)) % 97;
+  return ['', 'a2', 'a3', 'a4'][h % 4];
+}
+
 let toastTimer = null;
 function toast(msg) {
   const el = $('#toast');
@@ -88,6 +123,7 @@ const fbConfig = () => savedFbConfig() || codeFbConfig();
 // ── 앱 상태 ──────────────────────────────────────────────────
 const store = { mode: 'local', data: {}, backend: null, ready: false };
 const ui = { view: 'board', boardCat: '전체', todoFilter: 'all', kidTab: 'all' };
+const chatState = { lastKey: null, authorSig: '' };
 
 const myKey = (name = myName()) =>
   'u_' + String(name).trim().replace(/[.#$\[\]\/]/g, '_').slice(0, 40);
@@ -294,6 +330,8 @@ function renderAll() {
   renderKids();
   renderKidTabs();
   renderChildEditor();
+  renderChatAuthors();
+  renderChat();
   renderStatus();
   updateConnBadge();
 }
@@ -442,6 +480,90 @@ function renderChildEditor() {
     + `<div class="row"><button class="btn ghost" type="button" id="addChild">+ 자녀 추가</button></div>`;
 }
 
+/* ── 채팅 ─────────────────────────────────── */
+function chatAuthorNames() {
+  const names = [];
+  const push = (n) => {
+    const v = String(n || '').trim();
+    if (v && v !== CHAT_CUSTOM && !names.some((x) => norm(x) === norm(v))) names.push(v);
+  };
+  push(localStorage.getItem(K.chatAuthor));
+  push(myName());
+  CHAT_AUTHORS.forEach(push);
+  entries('status').forEach((s) => push(s.name));
+  return names;
+}
+
+function currentChatAuthor() {
+  const custom = $('#chatAuthorCustom');
+  if (custom && !custom.hidden && custom.value.trim()) return custom.value.trim();
+  return $('#chatAuthor')?.value || myName();
+}
+
+function renderChatAuthors() {
+  const sel = $('#chatAuthor');
+  if (!sel) return;
+  const names = chatAuthorNames();
+  const custom = $('#chatAuthorCustom');
+  const prev = sel.value || localStorage.getItem(K.chatAuthor) || myName();
+  const sig = `${names.join('|')}#${prev}`;
+  if (sig !== chatState.authorSig) {
+    chatState.authorSig = sig;
+    sel.innerHTML = names.map((n) => `<option value="${esc(n)}">${esc(n)}</option>`).join('')
+      + `<option value="${CHAT_CUSTOM}">✏️ ${CHAT_CUSTOM}</option>`;
+    sel.value = (prev === CHAT_CUSTOM || names.includes(prev)) ? prev : (names[0] || myName());
+  }
+  if (custom) custom.hidden = sel.value !== CHAT_CUSTOM;
+}
+
+function renderChat() {
+  const host = $('#chatList');
+  if (!host) return;
+  const list = entries('chat').sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+  const me = norm(currentChatAuthor());
+  const atBottom = host.scrollHeight - host.scrollTop - host.clientHeight < 72;
+
+  if (!list.length) {
+    host.innerHTML = '<div class="empty chat-empty"><b>💬</b><span>아직 대화가 없어요<br>첫 메시지를 남겨 보세요.</span></div>';
+    chatState.lastKey = null;
+    return;
+  }
+
+  let lastDay = '';
+  let prevAuthor = '';
+  const rows = [];
+  list.forEach((v) => {
+    const ts = Number(v.createdAt) || 0;
+    const key = dayKey(ts);
+    if (key !== lastDay) {
+      rows.push(`<div class="chat-day">${esc(dayLabel(key))}</div>`);
+      lastDay = key;
+      prevAuthor = '';
+    }
+    const mine = norm(v.author) === me;
+    const sameRun = !!prevAuthor && norm(prevAuthor) === norm(v.author);
+    const initial = String(v.author || '?').trim().slice(0, 1) || '?';
+    rows.push(`<div class="msg ${mine ? 'mine' : ''}" data-id="${esc(v.id)}">
+      ${mine ? '' : `<div class="msg-avatar ${avatarClass(v.author)}" aria-hidden="true">${esc(initial)}</div>`}
+      <div class="msg-body">
+        ${mine || sameRun ? '' : `<span class="msg-author">${esc(v.author || '익명')}</span>`}
+        <div class="bubble">${esc(v.text)}</div>
+        <div class="msg-meta">
+          <span>${esc(hhmm(ts))}</span>
+          ${mine ? '<button type="button" data-act="del" title="이 메시지 지우기" aria-label="메시지 삭제">🗑️</button>' : ''}
+        </div>
+      </div>
+    </div>`);
+    prevAuthor = v.author || '';
+  });
+  host.innerHTML = rows.join('');
+
+  const last = list[list.length - 1];
+  const changed = last.id !== chatState.lastKey;
+  chatState.lastKey = last.id;
+  if (changed && (atBottom || norm(last.author) === me)) host.scrollTop = host.scrollHeight;
+}
+
 /* ── 비서 현황 ─────────────────────────────── */
 function renderStatus() {
   const host = $('#statusList');
@@ -536,6 +658,12 @@ $('#tabs').addEventListener('click', (e) => {
   ui.view = btn.dataset.view;
   $$('.tab').forEach((t) => t.classList.toggle('active', t === btn));
   $$('.view').forEach((v) => v.classList.toggle('active', v.id === `view-${ui.view}`));
+  if (ui.view === 'chat') {
+    requestAnimationFrame(() => {
+      const list = $('#chatList');
+      if (list) list.scrollTop = list.scrollHeight;
+    });
+  }
   window.scrollTo({ top: 0, behavior: 'smooth' });
 });
 
@@ -723,7 +851,76 @@ $('#childEditor').addEventListener('click', async (e) => {
   toast('삭제했습니다');
 });
 
-/* ── 이벤트: 비서 현황 ────────────────────────────────────── */
+/* ── 이벤트: 채팅 ── */
+function growChatInput() {
+  const el = $('#chatInput');
+  if (!el) return;
+  el.style.height = 'auto';
+  el.style.height = `${Math.min(el.scrollHeight, 132)}px`;
+}
+
+async function sendChat() {
+  const input = $('#chatInput');
+  const text = input.value.trim();
+  if (!text) return;
+  if (!store.ready || !store.backend) { toast('잠시 후 다시 시도해 주세요'); return; }
+  const sel = $('#chatAuthor');
+  const author = currentChatAuthor();
+  if (!author) { toast('작성자를 선택하거나 이름을 입력하세요'); return; }
+  if (sel && sel.value !== CHAT_CUSTOM) localStorage.setItem(K.chatAuthor, sel.value);
+  await addItem('chat', { author, text, createdAt: Date.now() });
+  input.value = '';
+  growChatInput();
+  input.focus();
+}
+
+$('#chatForm').addEventListener('submit', (e) => {
+  e.preventDefault();
+  sendChat();
+});
+
+$('#chatInput').addEventListener('keydown', (e) => {
+  if (e.key !== 'Enter' || e.shiftKey) return;
+  if (e.isComposing || e.keyCode === 229) return;   // 한글 조합 중의 Enter 는 무시
+  e.preventDefault();
+  sendChat();
+});
+
+$('#chatInput').addEventListener('input', growChatInput);
+
+$('#chatAuthor').addEventListener('change', () => {
+  const sel = $('#chatAuthor');
+  const custom = $('#chatAuthorCustom');
+  const isCustom = sel.value === CHAT_CUSTOM;
+  custom.hidden = !isCustom;
+  if (isCustom) {
+    custom.value = '';
+    custom.focus();
+  } else {
+    localStorage.setItem(K.chatAuthor, sel.value);
+  }
+  renderChat();
+});
+
+$('#chatAuthorCustom').addEventListener('input', () => renderChat());
+
+$('#chatList').addEventListener('click', async (e) => {
+  const btn = e.target.closest('[data-act="del"]');
+  if (!btn) return;
+  const id = btn.closest('.msg')?.dataset.id;
+  if (!id) return;
+  const item = (store.data.chat || {})[id];
+  if (!item) return;
+  if (norm(item.author) !== norm(currentChatAuthor())) {
+    toast('내가 보낸 메시지만 지울 수 있어요');
+    return;
+  }
+  if (!confirm('이 메시지를 지울까요?')) return;
+  await removeItem('chat', id);
+  toast('메시지를 지웠습니다');
+});
+
+/* ── 이벤트: 비서 현황 ── */
 $('#statusForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   const name = $('#statusName').value.trim() || myName();

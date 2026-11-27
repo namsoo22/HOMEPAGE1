@@ -4,7 +4,7 @@
 Firebase Realtime Database를 연결하면 여러 기기에서 내용이 실시간으로 함께 바뀝니다.
 연결하지 않아도 **로컬 모드**(이 기기의 `localStorage`)로 그대로 동작합니다.
 
-- 배포 주소: <https://namsoo22.github.io/pickle-shared-office/>
+- 배포 주소: <https://namsoo22.github.io/HOMEPAGE1/shared-office/>
 
 ## 기능
 
@@ -13,10 +13,16 @@ Firebase Realtime Database를 연결하면 여러 기기에서 내용이 실시�
 | 📌 공유 보드 | 공지 · 요청 · 메모 글쓰기, 작성자 태그, 상단 고정, 수정 / 삭제 |
 | ✅ 공동 할 일 | 제목 · 담당자 · 기한 · 우선순위, 완료 체크, 전체 / 미완료 / 완료 필터 |
 | 🧒 아이들 보드 | 자녀별 탭(이름 · 이모지 편집 가능), 준비물 · 일정 · 전달사항 카드와 체크 |
+| 💬 채팅 | 메신저형 말풍선 대화, 작성자 선택(정석·미경 비서 등 · 직접 입력), Enter 전송 / Shift+Enter 줄바꿈, 내 메시지만 삭제 |
 | 👥 비서 현황 | 이름별 상태 한 줄, 마지막 업데이트 시각, 접속 중 표시(1분 하트비트) |
 
 - 입장 코드 잠금 화면이 있어 코드를 넣어야 내용이 보입니다.
 - 모바일(iPhone) · PC 반응형.
+
+## 채팅 데이터
+
+- 실시간 DB 모드에서는 `chat` 경로에 `{ author, text, createdAt }` 형태로 저장됩니다(`push` / `onValue` / `remove`).
+- 로컬 모드에서는 같은 구조가 `localStorage`에 저장되어 동일하게 동작합니다.
 
 ## 파일 구성
 

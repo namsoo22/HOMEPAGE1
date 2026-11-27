@@ -569,6 +569,191 @@ textarea { resize: vertical; line-height: 1.55; min-height: 48px; }
   content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--green);
 }
 
+/* ── 채팅 ──────────────────────────────────── */
+.chat-card {
+  display: flex;
+  flex-direction: column;
+  height: min(72dvh, 640px);
+  min-height: 380px;
+  padding: 0;
+  overflow: hidden;
+}
+
+.chat-head {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--line);
+  background: linear-gradient(180deg, #fafaff, #fff);
+}
+.chat-label {
+  flex: 0 0 auto;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.chat-head select {
+  flex: 0 1 168px;
+  min-width: 0;
+  padding: 8px 30px 8px 10px;
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.chat-head input {
+  flex: 1 1 120px;
+  min-width: 0;
+  padding: 8px 10px;
+  border-radius: 10px;
+  font-size: 13.5px;
+}
+
+.chat-list {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: 14px 12px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background:
+    radial-gradient(600px 300px at 100% 0%, #f5f6ff 0%, transparent 70%),
+    #fbfbfe;
+}
+
+.chat-empty {
+  margin: auto;
+  width: 100%;
+  padding: 24px 12px;
+  border: 0;
+  background: transparent;
+}
+
+.chat-day {
+  align-self: center;
+  margin: 4px 0 2px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: #eceef4;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.msg {
+  display: flex;
+  align-items: flex-end;
+  gap: 7px;
+  max-width: 88%;
+  align-self: flex-start;
+}
+.msg.mine { flex-direction: row-reverse; align-self: flex-end; }
+
+.msg-avatar {
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  margin-bottom: 16px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 800;
+  color: #fff;
+  background: linear-gradient(150deg, #6366f1, #4f46e5);
+}
+.msg-avatar.a2 { background: linear-gradient(150deg, #f472b6, #db2777); }
+.msg-avatar.a3 { background: linear-gradient(150deg, #34d399, #059669); }
+.msg-avatar.a4 { background: linear-gradient(150deg, #fbbf24, #d97706); }
+
+.msg-body {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+}
+.msg.mine .msg-body { align-items: flex-end; }
+
+.msg-author {
+  padding-left: 3px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink-2);
+}
+
+.bubble {
+  max-width: 100%;
+  padding: 9px 13px;
+  border-radius: 16px 16px 16px 5px;
+  background: #fff;
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: var(--ink);
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+.msg.mine .bubble {
+  background: var(--indigo);
+  border-color: var(--indigo);
+  color: #fff;
+  border-radius: 16px 16px 5px 16px;
+}
+
+.msg-meta {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 3px;
+  font-size: 10.5px;
+  color: var(--muted);
+}
+.msg-meta button {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  padding: 2px 4px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 11px;
+  opacity: .55;
+}
+.msg-meta button:hover { opacity: 1; background: #f3f4f6; }
+
+.chat-form {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 10px 12px calc(10px + var(--safe-b));
+  border-top: 1px solid var(--line);
+  background: #fff;
+}
+.chat-form textarea {
+  flex: 1 1 auto;
+  min-height: 44px;
+  max-height: 132px;
+  padding: 11px 14px;
+  border-radius: 14px;
+  resize: none;
+  line-height: 1.45;
+  font-size: 15px;
+}
+.chat-form .btn {
+  flex: 0 0 auto;
+  height: 44px;
+  padding: 0 18px;
+  border-radius: 14px;
+}
+
+/* ── 빈 상태 ───────────────────────────────── */
 .empty {
   text-align: center;
   padding: 34px 18px;
@@ -687,5 +872,16 @@ textarea { resize: vertical; line-height: 1.55; min-height: 48px; }
   .brand-text p { display: none; }
   .badge { font-size: 10.5px; padding: 6px 9px; }
   .form-row > .check { order: 3; }
-  .tabs { top: 63px; }
+  .tabs {
+    top: 63px;
+    flex-wrap: wrap;
+    overflow-x: visible;
+    row-gap: 6px;
+    justify-content: center;
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+  .tab { padding: 8px 12px; font-size: 12.5px; }
+  .chat-card { height: min(calc(100dvh - 250px), 640px); min-height: 330px; }
+  .msg { max-width: 92%; }
 }

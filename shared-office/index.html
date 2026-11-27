@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="합동 비서실">
-<link rel="stylesheet" href="./style.css?v=20261127">
+<link rel="stylesheet" href="./style.css?v=20261127b">
 </head>
 <body>
 
@@ -57,6 +57,7 @@
     <button class="tab active" data-view="board" type="button"><span>📌</span> 공유 보드</button>
     <button class="tab" data-view="todos" type="button"><span>✅</span> 공동 할 일</button>
     <button class="tab" data-view="kids" type="button"><span>🧒</span> 아이들 보드</button>
+    <button class="tab" data-view="chat" type="button"><span>💬</span> 채팅</button>
     <button class="tab" data-view="status" type="button"><span>👥</span> 비서 현황</button>
   </nav>
 
@@ -140,6 +141,25 @@
         <summary>⚙️ 자녀 탭 이름 편집</summary>
         <div id="childEditor" class="child-editor"></div>
       </details>
+    </section>
+
+    <!-- 채팅 -->
+    <section class="view" id="view-chat">
+      <div class="chat-card card">
+        <div class="chat-head">
+          <span class="chat-label">나</span>
+          <select id="chatAuthor" aria-label="작성자 선택"></select>
+          <input id="chatAuthorCustom" hidden placeholder="이름 직접 입력" aria-label="작성자 이름" maxlength="20" autocomplete="off">
+        </div>
+
+        <div class="chat-list" id="chatList" role="log" aria-live="polite" aria-label="대화 내용"></div>
+
+        <form class="chat-form" id="chatForm" autocomplete="off">
+          <textarea id="chatInput" rows="1" placeholder="메시지를 입력하세요" aria-label="메시지" enterkeyhint="send"></textarea>
+          <button class="btn primary" id="chatSend" type="submit">전송</button>
+        </form>
+      </div>
+      <p class="hint center">Enter 전송 · Shift+Enter 줄바꿈 · 내 말풍선은 🗑️로 지울 수 있어요.</p>
     </section>
 
     <!-- 비서 현황 -->
@@ -254,6 +274,6 @@
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script type="module" src="./app.js?v=20261127"></script>
+<script type="module" src="./app.js?v=20261127b"></script>
 </body>
 </html>
