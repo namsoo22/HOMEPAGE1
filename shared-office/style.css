@@ -540,7 +540,7 @@ button.chip-btn:hover { background: #F1F3F7; border-color: #DFE4EC; }
 
 @keyframes pinFloat {
   0%, 100% { transform: translate(-50%, -50%); }
-  50% { transform: translate(-50%, calc(-50% - 7px)); }
+  50% { transform: translate(-50%, calc(-50% - var(--float, 7px))); }
 }
 
 /* 모션 OFF */
@@ -1244,6 +1244,7 @@ textarea { resize: vertical; line-height: 1.55; min-height: 48px; }
   .pin .dot { width: 5px; height: 5px; }
   /* 좁은 화면에서는 핀이 겹치지 않도록 짧은 이름만 표시 */
   .pin > span { display: none; }
+  .pin { --float: 3px; }
   .pin::after {
     content: attr(data-short);
     font-size: 9.5px;
