@@ -9,11 +9,11 @@
 // ⚠️ 공개 저장소이므로 여기에는 DB 접속 정보 외의 개인정보를 넣지 마세요.
 
 export const FIREBASE_CONFIG = {
-  apiKey: "",
-  authDomain: "",
-  databaseURL: "",
-  projectId: "",
-  storageBucket: "",
-  messagingSenderId: "",
-  appId: ""
+  apiKey: "AIzaSyCQTcYJ1Ell-7pMaxZ9RnR9VVKZYcF4wjI",
+  authDomain: "pickle-shared-office.firebaseapp.com",
+  databaseURL: "https://pickle-shared-office-default-rtdb.firebaseio.com",
+  projectId: "pickle-shared-office",
+  storageBucket: "pickle-shared-office.firebasestorage.app",
+  messagingSenderId: "956137545492",
+  appId: "1:956137545492:web:b42f70764617bca18bac01"
 };
