@@ -1238,10 +1238,18 @@ textarea { resize: vertical; line-height: 1.55; min-height: 48px; }
   .pin {
     font-size: 10px;
     padding: 5px 8px;
-    gap: 4px;
+    gap: 5px;
     border-radius: 999px;
   }
   .pin .dot { width: 5px; height: 5px; }
+  /* 좁은 화면에서는 핀이 겹치지 않도록 짧은 이름만 표시 */
+  .pin > span { display: none; }
+  .pin::after {
+    content: attr(data-short);
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: -.2px;
+  }
 
   .rp-head { gap: 8px; }
   .rp-titles h4 { font-size: 14px; }
@@ -1254,7 +1262,8 @@ textarea { resize: vertical; line-height: 1.55; min-height: 48px; }
 }
 
 @media (max-width: 400px) {
-  .pin { font-size: 9.5px; padding: 4px 7px; gap: 3px; }
+  .pin { padding: 4px 7px; gap: 4px; }
+  .pin::after { font-size: 9px; }
   .seg { font-size: 11.5px; padding: 7px 11px; }
   .stat-top { font-size: 12px; }
   .stat-sub { font-size: 10px; }
