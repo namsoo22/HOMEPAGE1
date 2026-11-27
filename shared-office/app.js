@@ -487,7 +487,6 @@ function chatAuthorNames() {
     const v = String(n || '').trim();
     if (v && v !== CHAT_CUSTOM && !names.some((x) => norm(x) === norm(v))) names.push(v);
   };
-  push(localStorage.getItem(K.chatAuthor));
   push(myName());
   CHAT_AUTHORS.forEach(push);
   entries('status').forEach((s) => push(s.name));
@@ -506,6 +505,7 @@ function renderChatAuthors() {
   const names = chatAuthorNames();
   const custom = $('#chatAuthorCustom');
   const prev = sel.value || localStorage.getItem(K.chatAuthor) || myName();
+  if (prev !== CHAT_CUSTOM && !names.includes(prev)) names.push(prev);   // 지난번에 쓴 이름은 끝에 보존
   const sig = `${names.join('|')}#${prev}`;
   if (sig !== chatState.authorSig) {
     chatState.authorSig = sig;
