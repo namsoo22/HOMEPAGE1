@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#4f46e5">
+<meta name="description" content="합동 비서실 - 가족과 비서가 함께 쓰는 실시간 공유 보드">
+<title>합동 비서실 · Shared Assistant Office</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='24' fill='%234f46e5'/%3E%3Ctext x='50' y='68' font-size='54' text-anchor='middle' fill='white'%3E%F0%9F%8F%A2%3C/text%3E%3C/svg%3E">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="apple-touch-icon" href="./icon.svg">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="합동 비서실">
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+
+<!-- ── 잠금 화면 ───────────────────────────────────────────── -->
+<div class="lock" id="lockScreen">
+  <div class="lock-card">
+    <div class="lock-mark">🏢</div>
+    <h1>합동 비서실</h1>
+    <p class="lock-sub">Shared Assistant Office</p>
+    <form id="lockForm" class="lock-form" autocomplete="off">
+      <input id="lockCode" type="password" placeholder="입장 코드" aria-label="입장 코드" required autocapitalize="off" spellcheck="false">
+      <button type="submit" class="btn primary">입장</button>
+    </form>
+    <p class="lock-error" id="lockError" role="alert"></p>
+    <p class="lock-note">
+      입장 코드를 모르시면 정석 님께 문의하세요.<br>
+      보드 내용은 이 기기 또는 실시간 DB에만 저장되며,<br>화면에는 아무것도 미리 표시되지 않습니다.
+    </p>
+  </div>
+</div>
+
+<!-- ── 본문 ───────────────────────────────────────────────── -->
+<div class="app" id="app" hidden>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark">🏢</span>
+      <div class="brand-text">
+        <h1>합동 비서실</h1>
+        <p>Shared Assistant Office</p>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <button id="connBadge" class="badge" type="button" title="실시간 DB 연결 설정">
+        <span class="dot"></span><span id="connText">실시간 DB 미연결 · 로컬 모드</span>
+      </button>
+      <button id="settingsBtn" class="icon-btn" type="button" title="설정" aria-label="설정">⚙️</button>
+      <button id="lockBtn" class="icon-btn" type="button" title="잠그기" aria-label="잠그기">🔒</button>
+    </div>
+  </header>
+
+  <nav class="tabs" id="tabs">
+    <button class="tab active" data-view="board" type="button"><span>📌</span> 공유 보드</button>
+    <button class="tab" data-view="todos" type="button"><span>✅</span> 공동 할 일</button>
+    <button class="tab" data-view="kids" type="button"><span>🧒</span> 아이들 보드</button>
+    <button class="tab" data-view="status" type="button"><span>👥</span> 비서 현황</button>
+  </nav>
+
+  <main class="main">
+
+    <!-- 공유 보드 -->
+    <section class="view active" id="view-board">
+      <form class="card form" id="boardForm">
+        <div class="form-row">
+          <select id="boardCategory" aria-label="분류">
+            <option value="공지">📢 공지</option>
+            <option value="요청">🙋 요청</option>
+            <option value="메모" selected>📝 메모</option>
+          </select>
+          <input id="boardAuthor" list="authorOptions" placeholder="작성자" value="정석 비서" aria-label="작성자">
+          <label class="check"><input type="checkbox" id="boardPinned"> <span>상단 고정</span></label>
+        </div>
+        <textarea id="boardText" rows="2" placeholder="공지 · 요청 · 메모를 남겨 보세요 (예: 이번 주 금요일 오후 3시 병원 예약)" required></textarea>
+        <div class="form-actions">
+          <button class="btn primary" type="submit">올리기</button>
+        </div>
+      </form>
+
+      <div class="filter-row" id="boardFilters">
+        <button class="chip active" data-cat="전체" type="button">전체</button>
+        <button class="chip" data-cat="공지" type="button">공지</button>
+        <button class="chip" data-cat="요청" type="button">요청</button>
+        <button class="chip" data-cat="메모" type="button">메모</button>
+      </div>
+
+      <div class="list" id="boardList"></div>
+    </section>
+
+    <!-- 공동 할 일 -->
+    <section class="view" id="view-todos">
+      <form class="card form" id="todoForm">
+        <input id="todoTitle" placeholder="할 일을 입력하세요" aria-label="할 일" required>
+        <div class="form-row">
+          <input id="todoAssignee" list="authorOptions" placeholder="담당자" value="정석 비서" aria-label="담당자">
+          <input id="todoDue" type="date" aria-label="기한">
+          <select id="todoPriority" aria-label="우선순위">
+            <option value="높음">🔴 높음</option>
+            <option value="보통" selected>🟡 보통</option>
+            <option value="낮음">🟢 낮음</option>
+          </select>
+          <button class="btn primary" type="submit">추가</button>
+        </div>
+      </form>
+
+      <div class="filter-row" id="todoFilters">
+        <button class="chip active" data-filter="all" type="button">전체</button>
+        <button class="chip" data-filter="open" type="button">미완료</button>
+        <button class="chip" data-filter="done" type="button">완료</button>
+      </div>
+
+      <div class="list" id="todoList"></div>
+    </section>
+
+    <!-- 아이들 보드 -->
+    <section class="view" id="view-kids">
+      <form class="card form" id="kidForm">
+        <div class="form-row">
+          <select id="kidChild" aria-label="자녀"></select>
+          <select id="kidType" aria-label="종류">
+            <option value="준비물">🎒 준비물</option>
+            <option value="일정" selected>📅 일정</option>
+            <option value="전달">📣 전달사항</option>
+          </select>
+          <input id="kidDate" type="date" aria-label="날짜">
+        </div>
+        <div class="form-row">
+          <input id="kidText" placeholder="예: 체육복 · 수학 숙제 · 학원 6시" aria-label="내용" required>
+          <button class="btn primary" type="submit">추가</button>
+        </div>
+      </form>
+
+      <div class="filter-row" id="kidTabs"></div>
+      <div class="list" id="kidList"></div>
+
+      <details class="card manage">
+        <summary>⚙️ 자녀 탭 이름 편집</summary>
+        <div id="childEditor" class="child-editor"></div>
+      </details>
+    </section>
+
+    <!-- 비서 현황 -->
+    <section class="view" id="view-status">
+      <form class="card form" id="statusForm">
+        <div class="form-row">
+          <input id="statusName" list="authorOptions" placeholder="이름" value="정석 비서" aria-label="이름">
+          <input id="statusLine" placeholder="지금 상태 한 줄 (예: 오전 브리핑 준비 중)" aria-label="상태" required>
+          <button class="btn primary" type="submit">업데이트</button>
+        </div>
+      </form>
+
+      <div class="list" id="statusList"></div>
+      <p class="hint center" id="statusHint">이 화면을 열어 둔 동안 1분마다 접속 시각이 갱신됩니다.</p>
+    </section>
+
+  </main>
+
+  <footer class="footer">
+    <span>합동 비서실 · 가족과 비서가 함께 쓰는 공유 보드</span>
+    <span id="modeFooter"></span>
+  </footer>
+</div>
+
+<datalist id="authorOptions">
+  <option value="정석 비서"></option>
+  <option value="미경 비서"></option>
+  <option value="직접 작성"></option>
+</datalist>
+
+<!-- ── 설정 모달 ─────────────────────────────────────────── -->
+<div class="modal" id="settingsModal" hidden>
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+    <div class="modal-head">
+      <h2 id="settingsTitle">설정</h2>
+      <button class="icon-btn" data-close type="button" aria-label="닫기">✕</button>
+    </div>
+
+    <section class="modal-section">
+      <h3>실시간 DB 연결 (Firebase Realtime Database)</h3>
+      <p class="hint">
+        Firebase 콘솔 → 프로젝트 설정 → 내 앱 → SDK 설정의 구성 객체를 그대로 붙여넣으세요.
+        <code>databaseURL</code>이 포함되어야 합니다. 연결하면 이 기기와 다른 기기의 보드가 실시간으로 함께 바뀝니다.
+      </p>
+      <textarea id="fbConfigInput" rows="6" spellcheck="false" placeholder='{
+  "apiKey": "…",
+  "authDomain": "…firebaseapp.com",
+  "databaseURL": "https://…firebaseio.com",
+  "projectId": "…",
+  "appId": "…"
+}'></textarea>
+      <div class="row">
+        <button id="fbConnect" class="btn primary" type="button">연결</button>
+        <button id="fbDisconnect" class="btn ghost" type="button">연결 해제 (로컬 모드)</button>
+      </div>
+      <p class="hint" id="fbStatus"></p>
+    </section>
+
+    <section class="modal-section">
+      <h3>입장 코드 변경</h3>
+      <div class="row">
+        <input id="newCode" type="text" placeholder="새 입장 코드" autocapitalize="off" spellcheck="false">
+        <button id="saveCode" class="btn primary" type="button">저장</button>
+      </div>
+      <p class="hint" id="codeStatus"></p>
+    </section>
+
+    <section class="modal-section">
+      <h3>내 이름</h3>
+      <div class="row">
+        <input id="myName" type="text" placeholder="예: 정석 비서">
+        <button id="saveName" class="btn primary" type="button">저장</button>
+      </div>
+      <p class="hint">비서 현황판과 작성자 기본값에 쓰입니다.</p>
+    </section>
+
+    <section class="modal-section">
+      <h3>데이터</h3>
+      <div class="row">
+        <button id="resetLocal" class="btn ghost danger" type="button">이 기기의 로컬 데이터 초기화</button>
+      </div>
+      <p class="hint">로컬 모드에서만 동작합니다. 실시간 DB 데이터는 지워지지 않습니다.</p>
+    </section>
+  </div>
+</div>
+
+<!-- ── 보드 항목 편집 모달 ───────────────────────────────── -->
+<div class="modal" id="editModal" hidden>
+  <div class="modal-card narrow" role="dialog" aria-modal="true" aria-labelledby="editTitle">
+    <div class="modal-head">
+      <h2 id="editTitle">글 수정</h2>
+      <button class="icon-btn" data-close type="button" aria-label="닫기">✕</button>
+    </div>
+    <div class="modal-section">
+      <div class="form-row">
+        <select id="editCategory" aria-label="분류">
+          <option value="공지">📢 공지</option>
+          <option value="요청">🙋 요청</option>
+          <option value="메모">📝 메모</option>
+        </select>
+        <input id="editAuthor" list="authorOptions" placeholder="작성자" aria-label="작성자">
+        <label class="check"><input type="checkbox" id="editPinned"> <span>상단 고정</span></label>
+      </div>
+      <textarea id="editText" rows="5" aria-label="내용"></textarea>
+      <div class="row end">
+        <button class="btn ghost" data-close type="button">취소</button>
+        <button id="editSave" class="btn primary" type="button">저장</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script type="module" src="./app.js"></script>
+</body>
+</html>
