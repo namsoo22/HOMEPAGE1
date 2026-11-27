@@ -869,8 +869,10 @@ textarea { resize: vertical; line-height: 1.55; min-height: 48px; }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
 
 @media (max-width: 520px) {
+  .brand { gap: 8px; }
   .brand-text p { display: none; }
-  .badge { font-size: 10.5px; padding: 6px 9px; }
+  .brand-text h1 { font-size: 15.5px; white-space: nowrap; }
+  .badge { font-size: 10.5px; padding: 6px 9px; max-width: 38vw; }
   .form-row > .check { order: 3; }
   .tabs {
     top: 63px;
