@@ -770,7 +770,8 @@ function buildRoomRows(id) {
       const inRoom = (name) => canonName(name) === '2' || canonName(name) === '미경';
       const st = entries('status')
         .filter((v) => inRoom(v.name))
-        .sort((a, b) => (b.lastSeen || 0) - (a.lastSeen || 0))
+        .sort((a, b) => ((canonName(b.name) === '2') - (canonName(a.name) === '2'))
+          || (b.lastSeen || 0) - (a.lastSeen || 0))
         .slice(0, 1)
         .map((v) => {
           const live = isLiveStatus(v);
