@@ -424,6 +424,12 @@ button.chip-btn:hover { background: #F1F3F7; border-color: #DFE4EC; }
 /* ── 오피스: 씬 ────────────────────────────────────────────── */
 .office-card { padding: 14px 14px 14px; margin-bottom: 12px; }
 
+.office-body { display: grid; gap: 12px; align-items: start; }
+@media (min-width: 900px) {
+  /* 핀을 열면 장면 오른쪽에 현황 패널이 나란히 붙는다 */
+  .office-body:has(.room-panel:not([hidden])) { grid-template-columns: minmax(0, 1fr) 336px; }
+}
+
 .office-head {
   display: flex;
   align-items: flex-start;
@@ -530,10 +536,11 @@ button.chip-btn:hover { background: #F1F3F7; border-color: #DFE4EC; }
 
 /* ── 오피스: 핀 상세 패널 ──────────────────────────────────── */
 .room-panel {
-  padding: 16px 16px 14px;
-  margin-bottom: 12px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #FBFCFD;
   animation: panelIn .22s ease;
-  border-color: #DDE3EE;
 }
 .room-panel[hidden] { display: none; }
 @keyframes panelIn {
